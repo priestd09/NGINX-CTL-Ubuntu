@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# Set variables to be used
+script_action=$1
+# Script directories
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+TEMPLATES=$DIR/nginx-templates
+
+# Text colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Check we have root permissions
+if ! [ $(id -u) = 0 ]; then
+   echo -e "$RED This script needs to be run with root privilages! Try again with sudo. $NC"
+   exit 1
+fi
+
+## Function for creating a new application
+function createApp ()
+{
+	echo "Please enter the application name (Will be used for the local domain, No spaces):"
+	read app_name
+	echo "Please enter the application path (Used by NGINX):"
+	read app_path
+	echo "Please enter the nginx configuration template to use:"
+	read nginx_template
+
+	# Set the actual path for the application, Converting relative to absolute
+	app_path="$(realpath $(pwd)/$app_path)"
+	# Check nginx template exists
+	nginx_template="$TEMPLATES/$nginx_template"
+	if [ ! -f $nginx_template ]; then
+	   echo -e "$RED Nginx template at the location $nginx_template does not exist. $NC"
+	   exit 1
+	fi
+
+	# Create a domain name for local use
+	app_domain_name="$app_name.dev"
+
+	# nginx conf name
+	nginx_config_path="/etc/nginx/sites-available/$app_name.conf"
+	nginx_config_enabled_path="/etc/nginx/sites-enabled/$app_name.conf"
+
+	# Load nginx template and change template variables
+	nginx_config=$(<$nginx_template)
+	nginx_config=${nginx_config//\{\{\{\path\}\}\}/$app_path}
+	nginx_config=${nginx_config//\{\{\{\domain\}\}\}/$app_domain_name}
+	# Write to nginx configs
+	echo -e "$nginx_config" > $nginx_config_path
+
+	# Symlink to enabled config files
+	ln -s $nginx_config_path $nginx_config_enabled_path
+	# Test nginx config and reload
+	nginx -t
+	service nginx reload
+
+	# Add site to hosts file
+	echo -e "127.0.0.1 		$app_domain_name" >> /etc/hosts
+
+	echo -e "$GREEN Application added to nginx and hosts file. Nginx has been reloaded.$NC"
+}
+
+## Function for removing an old application
+function removeApp ()
+{
+	echo "Please enter the application name (Used within the domain eg. xxxx.dev):"
+	read app_name;
+	# domain name for local use
+	app_domain_name="$app_name.dev"
+
+	# nginx conf name
+	nginx_config_path="/etc/nginx/sites-available/$app_name.conf"
+	nginx_config_enabled_path="/etc/nginx/sites-enabled/$app_name.conf"
+
+	# Delete nginx config files
+	rm -f $nginx_config_enabled_path $nginx_config_path
+	service nginx reload
+
+	# Remove line from hosts file
+	sed -i "/127.0.0.1 		$app_domain_name/d" /etc/hosts
+	echo -e "$GREEN Application removed from nginx and hosts file.$NC"
+}
+
+# Run the chosed action
+case "$script_action" in
+	"create") createApp;;
+	"remove") removeApp;;
+	*) echo -e "$RED Command not found $NC"
+esac
