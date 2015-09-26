@@ -3,7 +3,13 @@
 # Set variables to be used
 script_action=$1
 # Script directories
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 TEMPLATES=$DIR/nginx-templates
 
 # Text colors
@@ -29,8 +35,13 @@ function createApp ()
 
 	# Set the actual path for the application, Converting relative to absolute
 	app_path="$(realpath $(pwd)/$app_path)"
-	# Check nginx template exists
+
+	# Check if nginx template exists, Prioritise any custom templates
 	nginx_template="$TEMPLATES/$nginx_template"
+	nginx_custom_template="$nginx_template.custom"
+	if [ -f $nginx_custom_template ]; then
+	   nginx_template=$nginx_custom_template
+	fi
 	if [ ! -f $nginx_template ]; then
 	   echo -e "$RED Nginx template at the location $nginx_template does not exist. $NC"
 	   exit 1

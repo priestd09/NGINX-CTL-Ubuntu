@@ -10,13 +10,13 @@ A simple command line bash script for configuring nginx development hosts on a u
 
 ## Commands
 
-### Create `sudo ./nginx-ctl create`
+#### Create `sudo ./nginx-ctl create`
 
 This will ask for an app name, Project path and a nginx template. After these items have been entered the specified nginx configration template will be used to create a new nginx host. A line will be added to your /etc/hosts file so you can use the {app_name}.dev domain to access your project. 
 
 Read below for information on the templating.
 
-### Remove` sudo ./nginx-ctl remove`
+#### Remove `sudo ./nginx-ctl remove`
 
 This will ask for an app name. Any projects added with the given name will be removed from nginx and your system /etc/hosts file.
 

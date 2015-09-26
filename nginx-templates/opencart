@@ -1,0 +1,73 @@
+server {
+	listen 80;
+	listen [::]:80;
+	server_name {{{domain}}};
+
+	root {{{path}}};
+	index index.php;
+
+	error_log /var/log/nginx/{{{domain}}}.error.log warn;
+	client_max_body_size 10M;
+
+	error_page 404 /index.php?route=error/not_found;
+
+    location = /favicon.ico {
+            log_not_found off;
+            access_log off;
+    }
+
+    location = /robots.txt {
+            allow all;
+            log_not_found off;
+            access_log off;
+    }
+
+	# Deny private areas
+	location ~* (\.(tpl|ini|log))$ {
+    		deny all;
+	}
+    location ~ ^/system/(.)*\.php {
+            deny  all;
+            return 404;
+    }
+    location ~ config\.php {
+            deny all;
+            return 404;
+    }	
+	location ~ /system/ {
+		deny all;
+		return 404;
+	}
+
+ 
+    location ~ \.php$ {
+  		try_files $uri =404;
+    	fastcgi_split_path_info ^(.+\.php)(/.+)$;
+    	fastcgi_pass unix:/var/run/php5-fpm.sock;
+    	fastcgi_index index.php;
+    	fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    	include fastcgi_params;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|woff)$ {
+        expires max;
+        log_not_found off;
+    }
+
+	location / {
+		try_files $uri $uri/ @opencart;
+	}
+
+	location @opencart {
+		rewrite ^/(.+)$ /index.php?_route_=$1 last;
+	}
+ 
+  	location /admin {
+		index index.php;
+  	}
+	
+ 	rewrite ^/sitemap.xml$ /index.php?route=feed/google_sitemap last;
+	rewrite ^/googlebase.xml$ /index.php?route=feed/google_base last;
+  	rewrite ^/download/(.*) /index.php?route=error/not_found last;
+
+}
