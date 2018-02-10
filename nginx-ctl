@@ -48,7 +48,7 @@ function createApp ()
 	fi
 
 	# Create a domain name for local use
-	app_domain_name="$app_name.dev"
+	app_domain_name="$app_name.local"
 
 	# nginx conf name
 	nginx_config_path="/etc/nginx/sites-available/$app_name.conf"
@@ -76,10 +76,10 @@ function createApp ()
 ## Function for removing an old application
 function removeApp ()
 {
-	echo "Please enter the application name (Used within the domain eg. xxxx.dev):"
+	echo "Please enter the application name (Used within the domain eg. xxxx.local):"
 	read app_name;
 	# domain name for local use
-	app_domain_name="$app_name.dev"
+	app_domain_name="$app_name.local"
 
 	# nginx conf name
 	nginx_config_path="/etc/nginx/sites-available/$app_name.conf"
